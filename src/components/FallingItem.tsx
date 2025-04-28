@@ -1,4 +1,3 @@
-
 import React, { useEffect, useRef } from 'react';
 
 interface FallingItemProps {
@@ -36,6 +35,7 @@ const FallingItem: React.FC<FallingItemProps> = ({
     let animationFrameId: number;
     
     const animate = () => {
+      // Update only y position, keep x position stable
       positionRef.current.y += speed;
       
       if (itemRef.current) {
@@ -67,8 +67,10 @@ const FallingItem: React.FC<FallingItemProps> = ({
       animationFrameId = requestAnimationFrame(animate);
     };
     
-    // Store initial position
-    positionRef.current = { x, y };
+    // Set initial position only on first render
+    if (positionRef.current.y === 0 || positionRef.current.y === y) {
+      positionRef.current = { x, y };
+    }
     
     animationFrameId = requestAnimationFrame(animate);
     
@@ -84,7 +86,7 @@ const FallingItem: React.FC<FallingItemProps> = ({
       style={{
         width: `${size}px`,
         height: `${size}px`,
-        transform: `translate(${x}px, ${y}px)`,
+        transform: `translate(${positionRef.current.x}px, ${positionRef.current.y}px)`,
       }}
     >
       {type === 'biscuit' ? (
