@@ -27,27 +27,27 @@ const FallingItem: React.FC<FallingItemProps> = ({
   gameHeight 
 }) => {
   const itemRef = useRef<HTMLDivElement>(null);
+  const positionRef = useRef({ x, y });
   const size = type === 'biscuit' ? 40 : 30;
   const caught = useRef(false);
   
   // Animation frame handling for smooth falling
   useEffect(() => {
-    let currentY = y;
     let animationFrameId: number;
     
     const animate = () => {
-      currentY += speed;
+      positionRef.current.y += speed;
       
       if (itemRef.current) {
-        itemRef.current.style.transform = `translate(${x}px, ${currentY}px)`;
+        itemRef.current.style.transform = `translate(${positionRef.current.x}px, ${positionRef.current.y}px)`;
         
         // Check for collision with cup
-        const itemBottom = currentY + size;
+        const itemBottom = positionRef.current.y + size;
         const cupTop = gameHeight - 90; // Approximate cup position from bottom
         
         // If item is at cup level and within cup bounds
         if (itemBottom >= cupTop && itemBottom <= cupTop + 20 && 
-            x > cupPosition - cupWidth/2 && x < cupPosition + cupWidth/2) {
+            positionRef.current.x > cupPosition - cupWidth/2 && positionRef.current.x < cupPosition + cupWidth/2) {
           
           if (!caught.current) {
             caught.current = true;
@@ -58,7 +58,7 @@ const FallingItem: React.FC<FallingItemProps> = ({
         }
         
         // Remove if out of bounds
-        if (currentY > gameHeight) {
+        if (positionRef.current.y > gameHeight) {
           onRemove(id);
           return;
         }
@@ -67,12 +67,15 @@ const FallingItem: React.FC<FallingItemProps> = ({
       animationFrameId = requestAnimationFrame(animate);
     };
     
+    // Store initial position
+    positionRef.current = { x, y };
+    
     animationFrameId = requestAnimationFrame(animate);
     
     return () => {
       cancelAnimationFrame(animationFrameId);
     };
-  }, [id, x, y, speed, onRemove, onCatch, cupPosition, cupWidth, gameHeight, type, size]);
+  }, [id, speed, onRemove, onCatch, cupPosition, cupWidth, gameHeight, type, size]);
   
   return (
     <div
