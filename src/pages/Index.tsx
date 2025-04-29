@@ -3,13 +3,15 @@ import React from 'react';
 import Game from '@/components/Game';
 
 const Index = () => {
+  console.log("Background image path:", "/lovable-uploads/13ab3003-dbf7-45fa-bbcc-63b57a9d942a.png");
   return (
     <div 
       className="min-h-screen flex flex-col items-center justify-start pt-4 md:pt-8 px-4"
       style={{
         backgroundImage: `url("/lovable-uploads/13ab3003-dbf7-45fa-bbcc-63b57a9d942a.png")`,
         backgroundSize: 'cover',
-        backgroundPosition: 'center'
+        backgroundPosition: 'center',
+        backgroundRepeat: 'no-repeat'
       }}
     >
       <div className="text-center mb-4">
