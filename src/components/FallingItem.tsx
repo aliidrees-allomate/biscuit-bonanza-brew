@@ -28,7 +28,7 @@ const FallingItem: React.FC<FallingItemProps> = ({
 }) => {
   const itemRef = useRef<HTMLDivElement>(null);
   const positionRef = useRef({ x, y });
-  const size = type === 'biscuit' ? 50 : 30;
+  const size = type === 'biscuit' ? 70 : 50;
   const caught = useRef(false);
   const initialRender = useRef(true);
   
@@ -45,10 +45,10 @@ const FallingItem: React.FC<FallingItemProps> = ({
         
         // Check for collision with cup
         const itemBottom = positionRef.current.y + size;
-        const cupTop = gameHeight - 90; // Approximate cup position from bottom
+        const cupTop = gameHeight - 110; // Approximate cup position from bottom
         
         // If item is at cup level and within cup bounds
-        if (itemBottom >= cupTop && itemBottom <= cupTop + 20 && 
+        if (itemBottom >= cupTop && itemBottom <= cupTop + 30 && 
             positionRef.current.x > cupPosition - cupWidth/2 && positionRef.current.x < cupPosition + cupWidth/2) {
           
           if (!caught.current) {
@@ -93,16 +93,23 @@ const FallingItem: React.FC<FallingItemProps> = ({
       }}
     >
       {type === 'biscuit' ? (
-        <div className="w-full h-full rounded-full bg-amber-200 border-2 border-amber-600 flex items-center justify-center shadow-md overflow-hidden">
-          {/* TAPAL butter biscuit styling */}
-          <div className="w-5/6 h-5/6 rounded-full bg-amber-300 flex items-center justify-center">
-            <div className="w-2/3 h-2/3 rounded-full bg-amber-400 flex items-center justify-center">
-              <div className="w-1/2 h-1/2 rounded-full bg-amber-500"></div>
-            </div>
-          </div>
-        </div>
+        <img 
+          src="/lovable-uploads/df61d8ad-4ad1-4860-ab9c-2dfcea460c6e.png" 
+          alt="TAPAL Butter Biscuit"
+          className="w-full h-full object-contain"
+          style={{
+            filter: "drop-shadow(0px 2px 4px rgba(0, 0, 0, 0.15))"
+          }}
+        />
       ) : (
-        <div className="w-full h-full rounded-full bg-yellow-50 border border-yellow-200 shadow-sm"></div>
+        <img 
+          src="/lovable-uploads/89319c6f-3312-47f0-8aa4-f553cc33eb92.png" 
+          alt="Egg"
+          className="w-full h-full object-contain"
+          style={{
+            filter: "drop-shadow(0px 2px 4px rgba(0, 0, 0, 0.15))"
+          }}
+        />
       )}
     </div>
   );
