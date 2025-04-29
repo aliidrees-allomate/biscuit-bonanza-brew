@@ -35,10 +35,17 @@
 
     --radius: 0.5rem;
 
+    /* TAPAL brand colors */
+    --tapal-red: 357 82% 47%;
+    --tapal-green: 152 30% 30%;
+    --tapal-cream: 60 33% 94%;
+    --tapal-gold: 43 74% 66%;
+    --tapal-dark-green: 158 79% 13%;
+
     /* Game colors */
-    --game-bg: 43 90% 76%;
-    --cup-color: 208 80% 53%;
-    --biscuit-color: 30 70% 60%;
+    --game-bg: var(--tapal-dark-green);
+    --cup-color: var(--tapal-green);
+    --biscuit-color: var(--tapal-gold);
     --egg-color: 60 100% 94%;
   }
 
@@ -111,4 +118,29 @@
   75% {
     transform: translateX(5px);
   }
+}
+
+@keyframes border-glow {
+  0%, 100% {
+    box-shadow: 0 0 5px rgba(218, 165, 32, 0.5);
+  }
+  50% {
+    box-shadow: 0 0 15px rgba(218, 165, 32, 0.8);
+  }
+}
+
+.ornamental-border {
+  position: relative;
+}
+
+.ornamental-border::before {
+  content: '';
+  position: absolute;
+  top: 8px;
+  left: 8px;
+  right: 8px;
+  bottom: 8px;
+  border: 2px solid hsl(var(--tapal-gold));
+  border-radius: 8px;
+  pointer-events: none;
 }

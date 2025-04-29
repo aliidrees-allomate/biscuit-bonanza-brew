@@ -27,9 +27,9 @@ const Game: React.FC = () => {
   const [fallingItems, setFallingItems] = useState<FallingItemType[]>([]);
   
   // Constants
-  const cupWidth = isMobile ? 60 : 80;
-  const cupSpeed = isMobile ? 10 : 20;
-  const maxItems = 20;
+  const cupWidth = isMobile ? 70 : 90;
+  const cupSpeed = isMobile ? 15 : 25;
+  const maxItems = 15;
   const gameSpeed = useRef(1);
   const lastSpawnTime = useRef(0);
   
@@ -87,9 +87,9 @@ const Game: React.FC = () => {
       const newItem: FallingItemType = {
         id: Math.random().toString(36).substring(2, 9),
         type: isEgg ? 'egg' : 'biscuit',
-        x: Math.random() * (gameSize.width - 40) + 20,
-        y: -40,
-        speed: (1 + Math.random()) * gameSpeed.current,
+        x: Math.random() * (gameSize.width - 60) + 30,
+        y: -50,
+        speed: (1.5 + Math.random()) * gameSpeed.current,
       };
       
       setFallingItems(prev => {
@@ -103,7 +103,7 @@ const Game: React.FC = () => {
     const gameLoop = setInterval(() => {
       spawnItem();
       // Increase game speed over time
-      gameSpeed.current = Math.min(3, 1 + score / 50);
+      gameSpeed.current = Math.min(3.5, 1 + score / 40);
     }, 1000);
     
     return () => {
@@ -116,8 +116,8 @@ const Game: React.FC = () => {
     if (type === 'biscuit') {
       setScore(prev => prev + 1);
       toast({
-        title: "Yum!",
-        description: "Biscuit caught. +1 point!",
+        title: "Delicious!",
+        description: "TAPAL Butter Biscuit caught! +1 point",
         duration: 1000,
       });
     } else {
@@ -159,21 +159,32 @@ const Game: React.FC = () => {
   
   return (
     <div className="w-full flex flex-col items-center">
-      <h1 className="text-2xl md:text-4xl font-bold mb-4">Biscuit Bonanza Brew</h1>
-      
-      <div className="flex justify-between w-full max-w-md mb-4">
-        <div className="text-lg font-bold">Score: {score}</div>
+      <div className="flex justify-between w-full max-w-md mb-4 items-center">
+        <div className="bg-[hsl(var(--tapal-green))] text-[hsl(var(--tapal-cream))] px-4 py-1 rounded font-bold">
+          Score: {score}
+        </div>
         {!gameStarted && !gameOver && (
-          <Button onClick={startGame}>Start Game</Button>
+          <Button 
+            onClick={startGame} 
+            className="bg-[hsl(var(--tapal-red))] hover:bg-[hsl(var(--tapal-red))] hover:brightness-90 text-white"
+          >
+            Start Game
+          </Button>
         )}
         {gameOver && (
-          <Button onClick={startGame}>Play Again</Button>
+          <Button 
+            onClick={startGame}
+            className="bg-[hsl(var(--tapal-red))] hover:bg-[hsl(var(--tapal-red))] hover:brightness-90 text-white"
+          >
+            Play Again
+          </Button>
         )}
       </div>
       
       <div 
         ref={gameRef}
-        className="relative w-full max-w-md h-[500px] bg-[hsl(var(--game-bg))] rounded-lg border-4 border-amber-600 overflow-hidden"
+        className="relative w-full max-w-md h-[500px] bg-[hsl(var(--tapal-dark-green))] rounded-lg border-4 border-[hsl(var(--tapal-gold))] overflow-hidden shadow-lg"
+        style={{animation: gameStarted ? 'border-glow 2s infinite' : 'none'}}
       >
         {/* Game content */}
         {gameStarted && !gameOver && (
@@ -199,11 +210,25 @@ const Game: React.FC = () => {
         
         {/* Start screen */}
         {!gameStarted && !gameOver && (
-          <div className="absolute inset-0 flex flex-col items-center justify-center">
-            <div className="text-xl font-bold mb-6 text-center px-4">
-              Catch the falling biscuits, but avoid the eggs!
+          <div className="absolute inset-0 flex flex-col items-center justify-center p-4">
+            <div className="mb-6 text-center">
+              <img 
+                src="/lovable-uploads/d201fdbc-6c15-41be-bd57-956888ac27b1.png" 
+                alt="TAPAL Classic Butter Biscuit" 
+                className="w-32 h-32 object-contain mx-auto mb-4"
+              />
+              <div className="text-xl font-bold mb-2 text-[hsl(var(--tapal-cream))]">
+                TAPAL Butter Biscuit Challenge
+              </div>
+              <p className="text-[hsl(var(--tapal-cream))] text-sm opacity-90">
+                Catch the delicious Classic Butter Biscuits in your cup of TAPAL tea, but avoid the eggs!
+              </p>
             </div>
-            <Button size="lg" onClick={startGame}>
+            <Button 
+              size="lg" 
+              onClick={startGame}
+              className="bg-[hsl(var(--tapal-red))] hover:bg-[hsl(var(--tapal-red))] hover:brightness-90 text-white"
+            >
               Start Game
             </Button>
           </div>
@@ -211,10 +236,17 @@ const Game: React.FC = () => {
         
         {/* Game over screen */}
         {gameOver && (
-          <div className="absolute inset-0 flex flex-col items-center justify-center bg-black/50">
+          <div className="absolute inset-0 flex flex-col items-center justify-center bg-black/70">
             <div className="text-xl font-bold mb-2 text-white">Game Over!</div>
-            <div className="text-lg mb-6 text-white">Final Score: {score}</div>
-            <Button size="lg" onClick={startGame}>
+            <div className="text-lg mb-6 text-[hsl(var(--tapal-gold))]">Final Score: {score}</div>
+            <div className="mb-4 text-center text-white text-sm">
+              Nothing goes better with TAPAL tea than our delicious Classic Butter Biscuits!
+            </div>
+            <Button 
+              size="lg" 
+              onClick={startGame}
+              className="bg-[hsl(var(--tapal-red))] hover:bg-[hsl(var(--tapal-red))] hover:brightness-90 text-white"
+            >
               Play Again
             </Button>
           </div>
@@ -226,7 +258,7 @@ const Game: React.FC = () => {
             <Button 
               variant="secondary" 
               size="lg" 
-              className="h-16 w-16 rounded-full"
+              className="h-16 w-16 rounded-full bg-[hsl(var(--tapal-cream))] text-[hsl(var(--tapal-green))] border-2 border-[hsl(var(--tapal-gold))]"
               onTouchStart={moveLeft}
               onClick={moveLeft}
             >
@@ -235,7 +267,7 @@ const Game: React.FC = () => {
             <Button 
               variant="secondary" 
               size="lg" 
-              className="h-16 w-16 rounded-full"
+              className="h-16 w-16 rounded-full bg-[hsl(var(--tapal-cream))] text-[hsl(var(--tapal-green))] border-2 border-[hsl(var(--tapal-gold))]"
               onTouchStart={moveRight}
               onClick={moveRight}
             >
@@ -245,8 +277,8 @@ const Game: React.FC = () => {
         )}
       </div>
       
-      <div className="mt-4 text-sm opacity-70 text-center px-4">
-        Use left/right arrow keys to move cup. On mobile, use the arrow buttons.
+      <div className="mt-4 text-sm text-[hsl(var(--tapal-green))] opacity-80 text-center px-4">
+        Use left/right arrow keys to move cup, or tap arrow buttons on mobile. Catch the TAPAL Classic Butter Biscuits!
       </div>
     </div>
   );

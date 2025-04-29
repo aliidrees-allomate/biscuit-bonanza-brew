@@ -1,3 +1,4 @@
+
 import React, { useEffect, useRef } from 'react';
 
 interface FallingItemProps {
@@ -27,8 +28,9 @@ const FallingItem: React.FC<FallingItemProps> = ({
 }) => {
   const itemRef = useRef<HTMLDivElement>(null);
   const positionRef = useRef({ x, y });
-  const size = type === 'biscuit' ? 40 : 30;
+  const size = type === 'biscuit' ? 50 : 30;
   const caught = useRef(false);
+  const initialRender = useRef(true);
   
   // Animation frame handling for smooth falling
   useEffect(() => {
@@ -67,9 +69,10 @@ const FallingItem: React.FC<FallingItemProps> = ({
       animationFrameId = requestAnimationFrame(animate);
     };
     
-    // Set initial position only on first render
-    if (positionRef.current.y === 0 || positionRef.current.y === y) {
+    // Set initial position only once on first render
+    if (initialRender.current) {
       positionRef.current = { x, y };
+      initialRender.current = false;
     }
     
     animationFrameId = requestAnimationFrame(animate);
@@ -77,7 +80,7 @@ const FallingItem: React.FC<FallingItemProps> = ({
     return () => {
       cancelAnimationFrame(animationFrameId);
     };
-  }, [id, speed, onRemove, onCatch, cupPosition, cupWidth, gameHeight, type, size]);
+  }, [id, speed, onRemove, onCatch, cupPosition, cupWidth, gameHeight, type, size, x, y]);
   
   return (
     <div
@@ -90,11 +93,16 @@ const FallingItem: React.FC<FallingItemProps> = ({
       }}
     >
       {type === 'biscuit' ? (
-        <div className="w-full h-full rounded-full bg-amber-500 border-2 border-amber-600 flex items-center justify-center">
-          <div className="w-2/3 h-2/3 rounded-full bg-amber-400 border border-amber-600"></div>
+        <div className="w-full h-full rounded-full bg-amber-200 border-2 border-amber-600 flex items-center justify-center shadow-md overflow-hidden">
+          {/* TAPAL butter biscuit styling */}
+          <div className="w-5/6 h-5/6 rounded-full bg-amber-300 flex items-center justify-center">
+            <div className="w-2/3 h-2/3 rounded-full bg-amber-400 flex items-center justify-center">
+              <div className="w-1/2 h-1/2 rounded-full bg-amber-500"></div>
+            </div>
+          </div>
         </div>
       ) : (
-        <div className="w-full h-full rounded-full bg-yellow-50 border border-yellow-200"></div>
+        <div className="w-full h-full rounded-full bg-yellow-50 border border-yellow-200 shadow-sm"></div>
       )}
     </div>
   );
