@@ -1,7 +1,7 @@
 
 import React, { useState, useEffect, useRef } from 'react';
 import { Button } from '@/components/ui/button';
-import { ArrowLeft, ArrowRight, Award } from 'lucide-react';
+import { ArrowLeft, ArrowRight, Award, Timer } from 'lucide-react';
 import Cup from './Cup';
 import FallingItem from './FallingItem';
 import { useToast } from '@/hooks/use-toast';
@@ -13,6 +13,13 @@ interface FallingItemType {
   x: number;
   y: number;
   speed: number;
+}
+
+interface ScoreAnimationType {
+  id: string;
+  x: number;
+  y: number;
+  opacity: number;
 }
 
 const Game: React.FC = () => {
@@ -27,6 +34,10 @@ const Game: React.FC = () => {
   const [fallingItems, setFallingItems] = useState<FallingItemType[]>([]);
   const [level, setLevel] = useState(1);
   const [showLevelUp, setShowLevelUp] = useState(false);
+  const [countdown, setCountdown] = useState<number | null>(null);
+  const [elapsedTime, setElapsedTime] = useState(0);
+  const [scoreAnimations, setScoreAnimations] = useState<ScoreAnimationType[]>([]);
+  const [recentlyCaughtItem, setRecentlyCaughtItem] = useState<{type: 'biscuit' | 'egg', show: boolean}>({type: 'biscuit', show: false});
   
   // Constants
   const cupWidth = isMobile ? 70 : 90;
@@ -35,6 +46,7 @@ const Game: React.FC = () => {
   const gameSpeed = useRef(1);
   const lastSpawnTime = useRef(0);
   const levelTimer = useRef<number | null>(null);
+  const gameTimer = useRef<number | null>(null);
   const levelDuration = 60000; // 1 minute per level
   
   // Setup game area
@@ -59,7 +71,7 @@ const Game: React.FC = () => {
   
   // Handle keyboard controls
   useEffect(() => {
-    if (!gameStarted || gameOver) return;
+    if (!gameStarted || gameOver || countdown !== null) return;
     
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key === 'ArrowLeft' && cupPosition > cupWidth/2) {
@@ -73,11 +85,39 @@ const Game: React.FC = () => {
     return () => {
       window.removeEventListener('keydown', handleKeyDown);
     };
-  }, [gameStarted, gameOver, cupPosition, gameSize.width, cupWidth, cupSpeed]);
+  }, [gameStarted, gameOver, cupPosition, gameSize.width, cupWidth, cupSpeed, countdown]);
+  
+  // Game timer for elapsed time
+  useEffect(() => {
+    if (!gameStarted || gameOver || countdown !== null) {
+      if (gameTimer.current) {
+        clearInterval(gameTimer.current);
+        gameTimer.current = null;
+      }
+      return;
+    }
+    
+    gameTimer.current = window.setInterval(() => {
+      setElapsedTime(prev => prev + 1);
+    }, 1000);
+    
+    return () => {
+      if (gameTimer.current) {
+        clearInterval(gameTimer.current);
+      }
+    };
+  }, [gameStarted, gameOver, countdown]);
+  
+  // Format time as MM:SS
+  const formatTime = (seconds: number) => {
+    const minutes = Math.floor(seconds / 60);
+    const remainingSeconds = seconds % 60;
+    return `${minutes.toString().padStart(2, '0')}:${remainingSeconds.toString().padStart(2, '0')}`;
+  };
   
   // Level management
   useEffect(() => {
-    if (!gameStarted || gameOver) {
+    if (!gameStarted || gameOver || countdown !== null) {
       if (levelTimer.current) {
         clearTimeout(levelTimer.current);
         levelTimer.current = null;
@@ -115,11 +155,11 @@ const Game: React.FC = () => {
         clearTimeout(levelTimer.current);
       }
     };
-  }, [gameStarted, gameOver, level, toast]);
+  }, [gameStarted, gameOver, level, toast, countdown]);
   
   // Item spawning logic
   useEffect(() => {
-    if (!gameStarted || gameOver || gameSize.width === 0) return;
+    if (!gameStarted || gameOver || countdown !== null || gameSize.width === 0) return;
     
     const spawnInterval = 1500 / gameSpeed.current;
     
@@ -156,15 +196,50 @@ const Game: React.FC = () => {
     return () => {
       clearInterval(gameLoop);
     };
-  }, [gameStarted, gameOver, gameSize.width, level]);
+  }, [gameStarted, gameOver, gameSize.width, level, countdown]);
+
+  // Score animation effects
+  useEffect(() => {
+    if (scoreAnimations.length === 0) return;
+    
+    const animationInterval = setInterval(() => {
+      setScoreAnimations(prev => 
+        prev.map(anim => ({
+          ...anim,
+          y: anim.y - 2, // Move upward
+          opacity: Math.max(0, anim.opacity - 0.02) // Fade out
+        })).filter(anim => anim.opacity > 0) // Remove completely faded animations
+      );
+    }, 16); // ~60fps
+    
+    return () => {
+      clearInterval(animationInterval);
+    };
+  }, [scoreAnimations]);
   
   // Handle catching items
   const handleCatchItem = (type: 'biscuit' | 'egg') => {
+    // Show the caught item inside the cup
+    setRecentlyCaughtItem({ type, show: true });
+    setTimeout(() => setRecentlyCaughtItem({ type, show: false }), 500);
+    
     if (type === 'biscuit') {
-      setScore(prev => prev + 1);
+      // Add 10 points instead of 1
+      setScore(prev => prev + 10);
+      
+      // Create score animation
+      const newAnimation: ScoreAnimationType = {
+        id: Math.random().toString(36).substring(2, 9),
+        x: cupPosition,
+        y: gameSize.height - 120,
+        opacity: 1
+      };
+      
+      setScoreAnimations(prev => [...prev, newAnimation]);
+      
       toast({
         title: "Delicious!",
-        description: "TAPAL Butter Biscuit caught! +1 point",
+        description: "TAPAL Butter Biscuit caught! +10 points",
         duration: 1000,
       });
     } else {
@@ -184,26 +259,45 @@ const Game: React.FC = () => {
   
   // Handle mobile controls
   const moveLeft = () => {
+    if (countdown !== null) return;
+    
     if (cupPosition > cupWidth/2) {
       setCupPosition(prev => Math.max(cupWidth/2, prev - cupSpeed));
     }
   };
   
   const moveRight = () => {
+    if (countdown !== null) return;
+    
     if (cupPosition < gameSize.width - cupWidth/2) {
       setCupPosition(prev => Math.min(gameSize.width - cupWidth/2, prev + cupSpeed));
     }
   };
   
-  // Start a new game
-  const startGame = () => {
-    setGameStarted(true);
+  // Start countdown and then game
+  const startCountdown = () => {
+    setCountdown(3);
     setGameOver(false);
     setScore(0);
     setFallingItems([]);
     setLevel(1);
     setShowLevelUp(false);
+    setElapsedTime(0);
     gameSpeed.current = 1;
+    
+    // Start countdown timer
+    const countdownTimer = setInterval(() => {
+      setCountdown(prev => {
+        if (prev === null) return null;
+        if (prev <= 1) {
+          clearInterval(countdownTimer);
+          setCountdown(null);
+          setGameStarted(true);
+          return null;
+        }
+        return prev - 1;
+      });
+    }, 1000);
   };
   
   return (
@@ -217,9 +311,18 @@ const Game: React.FC = () => {
             Level: {level}
           </div>
         </div>
+        
+        {/* Timer display */}
+        {gameStarted && !gameOver && countdown === null && (
+          <div className="flex items-center gap-2 bg-[hsl(var(--tapal-cream))] text-[hsl(var(--tapal-green))] px-4 py-1 rounded font-bold">
+            <Timer size={16} />
+            {formatTime(elapsedTime)}
+          </div>
+        )}
+        
         {!gameStarted && !gameOver && (
           <Button 
-            onClick={startGame} 
+            onClick={startCountdown} 
             className="bg-[hsl(var(--tapal-red))] hover:bg-[hsl(var(--tapal-red))] hover:brightness-90 text-white"
           >
             Start Game
@@ -227,7 +330,7 @@ const Game: React.FC = () => {
         )}
         {gameOver && (
           <Button 
-            onClick={startGame}
+            onClick={startCountdown}
             className="bg-[hsl(var(--tapal-red))] hover:bg-[hsl(var(--tapal-red))] hover:brightness-90 text-white"
           >
             Play Again
@@ -241,9 +344,14 @@ const Game: React.FC = () => {
         style={{animation: gameStarted ? 'border-glow 2s infinite' : 'none'}}
       >
         {/* Game content */}
-        {gameStarted && !gameOver && (
+        {gameStarted && !gameOver && countdown === null && (
           <>
-            <Cup position={cupPosition} isMobile={isMobile} />
+            <Cup 
+              position={cupPosition} 
+              isMobile={isMobile}
+              hasCaughtItem={recentlyCaughtItem.show} 
+              caughtItemType={recentlyCaughtItem.type}
+            />
             {fallingItems.map(item => (
               <FallingItem
                 key={item.id}
@@ -260,6 +368,27 @@ const Game: React.FC = () => {
               />
             ))}
             
+            {/* Score animations */}
+            {scoreAnimations.map(animation => (
+              <div
+                key={animation.id}
+                className="absolute pointer-events-none"
+                style={{
+                  left: animation.x,
+                  top: animation.y,
+                  transform: 'translate(-50%, -50%)',
+                  opacity: animation.opacity,
+                  zIndex: 30
+                }}
+              >
+                <img 
+                  src="/lovable-uploads/23fcb4bb-42b0-4b93-af55-028ede504b86.png" 
+                  alt="+10" 
+                  className="w-12 h-12 object-contain"
+                />
+              </div>
+            ))}
+            
             {/* Level up notification */}
             {showLevelUp && (
               <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 bg-[hsl(var(--tapal-gold))] text-[hsl(var(--tapal-green))] px-6 py-4 rounded-lg shadow-lg animate-scale-in z-20">
@@ -273,8 +402,17 @@ const Game: React.FC = () => {
           </>
         )}
         
+        {/* Countdown animation */}
+        {countdown !== null && (
+          <div className="absolute inset-0 flex items-center justify-center bg-black/50 z-30">
+            <div className="text-white font-bold animate-scale-in text-8xl">
+              {countdown > 0 ? countdown : "Start!"}
+            </div>
+          </div>
+        )}
+        
         {/* Start screen */}
-        {!gameStarted && !gameOver && (
+        {!gameStarted && !gameOver && countdown === null && (
           <div className="absolute inset-0 flex flex-col items-center justify-center p-4">
             <div className="mb-6 text-center">
               <img 
@@ -289,12 +427,12 @@ const Game: React.FC = () => {
                 Catch the delicious Classic Butter Biscuits in your cup of TAPAL tea, but avoid the eggs!
               </p>
               <p className="text-[hsl(var(--tapal-gold))] text-sm mb-4">
-                Level up every minute for increased difficulty!
+                Game level will be up after every minute
               </p>
             </div>
             <Button 
               size="lg" 
-              onClick={startGame}
+              onClick={startCountdown}
               className="bg-[hsl(var(--tapal-red))] hover:bg-[hsl(var(--tapal-red))] hover:brightness-90 text-white"
             >
               Start Game
@@ -307,13 +445,15 @@ const Game: React.FC = () => {
           <div className="absolute inset-0 flex flex-col items-center justify-center bg-black/70">
             <div className="text-xl font-bold mb-2 text-white">Game Over!</div>
             <div className="text-lg mb-2 text-[hsl(var(--tapal-gold))]">Final Score: {score}</div>
-            <div className="text-md mb-4 text-[hsl(var(--tapal-cream))]">Level Reached: {level}</div>
+            <div className="text-md mb-4 text-white">
+              <span className="text-[hsl(var(--tapal-cream))]">Level Reached: {level}</span> • Time: {formatTime(elapsedTime)}
+            </div>
             <div className="mb-4 text-center text-white text-sm">
               Nothing goes better with TAPAL tea than our delicious Classic Butter Biscuits!
             </div>
             <Button 
               size="lg" 
-              onClick={startGame}
+              onClick={startCountdown}
               className="bg-[hsl(var(--tapal-red))] hover:bg-[hsl(var(--tapal-red))] hover:brightness-90 text-white"
             >
               Play Again
@@ -322,7 +462,7 @@ const Game: React.FC = () => {
         )}
         
         {/* Mobile controls */}
-        {isMobile && gameStarted && !gameOver && (
+        {isMobile && gameStarted && !gameOver && countdown === null && (
           <div className="absolute bottom-0 left-0 right-0 flex justify-between p-2">
             <Button 
               variant="secondary" 
