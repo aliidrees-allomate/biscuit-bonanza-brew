@@ -1,10 +1,10 @@
 
 import React, { useState, useEffect, useRef } from 'react';
 import { Button } from '@/components/ui/button';
-import { ArrowLeft, ArrowRight } from 'lucide-react';
+import { ArrowLeft, ArrowRight, Award } from 'lucide-react';
 import Cup from './Cup';
 import FallingItem from './FallingItem';
-import { useToast } from '@/components/ui/use-toast';
+import { useToast } from '@/hooks/use-toast';
 import { useIsMobile } from '@/hooks/use-mobile';
 
 interface FallingItemType {
@@ -25,6 +25,8 @@ const Game: React.FC = () => {
   const [gameStarted, setGameStarted] = useState(false);
   const [gameOver, setGameOver] = useState(false);
   const [fallingItems, setFallingItems] = useState<FallingItemType[]>([]);
+  const [level, setLevel] = useState(1);
+  const [showLevelUp, setShowLevelUp] = useState(false);
   
   // Constants
   const cupWidth = isMobile ? 70 : 90;
@@ -32,6 +34,8 @@ const Game: React.FC = () => {
   const maxItems = 15;
   const gameSpeed = useRef(1);
   const lastSpawnTime = useRef(0);
+  const levelTimer = useRef<number | null>(null);
+  const levelDuration = 60000; // 1 minute per level
   
   // Setup game area
   useEffect(() => {
@@ -71,6 +75,48 @@ const Game: React.FC = () => {
     };
   }, [gameStarted, gameOver, cupPosition, gameSize.width, cupWidth, cupSpeed]);
   
+  // Level management
+  useEffect(() => {
+    if (!gameStarted || gameOver) {
+      if (levelTimer.current) {
+        clearTimeout(levelTimer.current);
+        levelTimer.current = null;
+      }
+      return;
+    }
+    
+    // Start level timer
+    levelTimer.current = window.setTimeout(() => {
+      const newLevel = level + 1;
+      setLevel(newLevel);
+      setShowLevelUp(true);
+      
+      // Increase game speed based on level
+      gameSpeed.current = Math.min(4, 1 + (newLevel * 0.5));
+      
+      // Show level up toast
+      toast({
+        title: `Level ${newLevel}!`,
+        description: `You've reached level ${newLevel}! The difficulty increases!`,
+        duration: 3000,
+      });
+      
+      // Hide level up message after 3 seconds
+      setTimeout(() => setShowLevelUp(false), 3000);
+      
+      // Schedule next level
+      levelTimer.current = window.setTimeout(() => {
+        // This will be set in the next iteration of this effect
+      }, levelDuration);
+    }, levelDuration);
+    
+    return () => {
+      if (levelTimer.current) {
+        clearTimeout(levelTimer.current);
+      }
+    };
+  }, [gameStarted, gameOver, level, toast]);
+  
   // Item spawning logic
   useEffect(() => {
     if (!gameStarted || gameOver || gameSize.width === 0) return;
@@ -83,13 +129,16 @@ const Game: React.FC = () => {
       
       lastSpawnTime.current = now;
       
-      const isEgg = Math.random() < 0.2; // 20% chance of spawning an egg
+      // Increase egg probability based on level
+      const eggProbability = 0.1 + (level * 0.02); // Increases by 2% per level
+      const isEgg = Math.random() < eggProbability; 
+      
       const newItem: FallingItemType = {
         id: Math.random().toString(36).substring(2, 9),
         type: isEgg ? 'egg' : 'biscuit',
         x: Math.random() * (gameSize.width - 60) + 30,
         y: -50,
-        speed: (1.5 + Math.random()) * gameSpeed.current,
+        speed: (1.5 + Math.random() + (level * 0.2)) * gameSpeed.current, // Increase speed based on level
       };
       
       setFallingItems(prev => {
@@ -102,14 +151,12 @@ const Game: React.FC = () => {
     
     const gameLoop = setInterval(() => {
       spawnItem();
-      // Increase game speed over time
-      gameSpeed.current = Math.min(3.5, 1 + score / 40);
-    }, 1000);
+    }, 1000 / level); // Spawn items faster as level increases
     
     return () => {
       clearInterval(gameLoop);
     };
-  }, [gameStarted, gameOver, gameSize.width, score]);
+  }, [gameStarted, gameOver, gameSize.width, level]);
   
   // Handle catching items
   const handleCatchItem = (type: 'biscuit' | 'egg') => {
@@ -154,14 +201,21 @@ const Game: React.FC = () => {
     setGameOver(false);
     setScore(0);
     setFallingItems([]);
+    setLevel(1);
+    setShowLevelUp(false);
     gameSpeed.current = 1;
   };
   
   return (
     <div className="w-full flex flex-col items-center">
       <div className="flex justify-between w-full max-w-md mb-4 items-center">
-        <div className="bg-[hsl(var(--tapal-green))] text-[hsl(var(--tapal-cream))] px-4 py-1 rounded font-bold">
-          Score: {score}
+        <div className="flex items-center gap-4">
+          <div className="bg-[hsl(var(--tapal-green))] text-[hsl(var(--tapal-cream))] px-4 py-1 rounded font-bold">
+            Score: {score}
+          </div>
+          <div className="bg-[hsl(var(--tapal-gold))] text-[hsl(var(--tapal-green))] px-4 py-1 rounded font-bold">
+            Level: {level}
+          </div>
         </div>
         {!gameStarted && !gameOver && (
           <Button 
@@ -205,6 +259,17 @@ const Game: React.FC = () => {
                 gameHeight={gameSize.height}
               />
             ))}
+            
+            {/* Level up notification */}
+            {showLevelUp && (
+              <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 bg-[hsl(var(--tapal-gold))] text-[hsl(var(--tapal-green))] px-6 py-4 rounded-lg shadow-lg animate-scale-in z-20">
+                <div className="flex items-center gap-2 justify-center mb-2">
+                  <Award className="text-[hsl(var(--tapal-gold))] stroke-[hsl(var(--tapal-green))]" size={24} />
+                  <span className="text-xl font-bold">Level Up!</span>
+                </div>
+                <p className="text-center">You've reached level {level}!</p>
+              </div>
+            )}
           </>
         )}
         
@@ -220,8 +285,11 @@ const Game: React.FC = () => {
               <div className="text-xl font-bold mb-2 text-[hsl(var(--tapal-cream))]">
                 TAPAL Butter Biscuit Challenge
               </div>
-              <p className="text-[hsl(var(--tapal-cream))] text-sm opacity-90">
+              <p className="text-[hsl(var(--tapal-cream))] text-sm opacity-90 mb-2">
                 Catch the delicious Classic Butter Biscuits in your cup of TAPAL tea, but avoid the eggs!
+              </p>
+              <p className="text-[hsl(var(--tapal-gold))] text-sm mb-4">
+                Level up every minute for increased difficulty!
               </p>
             </div>
             <Button 
@@ -238,7 +306,8 @@ const Game: React.FC = () => {
         {gameOver && (
           <div className="absolute inset-0 flex flex-col items-center justify-center bg-black/70">
             <div className="text-xl font-bold mb-2 text-white">Game Over!</div>
-            <div className="text-lg mb-6 text-[hsl(var(--tapal-gold))]">Final Score: {score}</div>
+            <div className="text-lg mb-2 text-[hsl(var(--tapal-gold))]">Final Score: {score}</div>
+            <div className="text-md mb-4 text-[hsl(var(--tapal-cream))]">Level Reached: {level}</div>
             <div className="mb-4 text-center text-white text-sm">
               Nothing goes better with TAPAL tea than our delicious Classic Butter Biscuits!
             </div>
