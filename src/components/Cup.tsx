@@ -1,4 +1,3 @@
-
 import React from 'react';
 
 interface CupProps {
@@ -8,7 +7,7 @@ interface CupProps {
 
 const Cup: React.FC<CupProps> = ({ position, isMobile }) => {
   // Size adjustment for mobile vs desktop
-  const cupSize = isMobile ? 80 : 100;
+  const cupSize = isMobile ? 90 : 160;
   
   return (
     <div 
@@ -16,11 +15,12 @@ const Cup: React.FC<CupProps> = ({ position, isMobile }) => {
         left: `${position}px`, 
         width: `${cupSize}px`, 
         height: `${cupSize}px`,
+        zIndex: 10,
       }}
       className="absolute bottom-10 transform -translate-x-1/2 transition-all duration-100 ease-out"
     >
       <img 
-        src="/lovable-uploads/8ebccf9d-4894-44ea-80d9-db7722b88e7c.png" 
+        src="/lovable-uploads/cup-vector.png" 
         alt="TAPAL Tea Cup" 
         className="w-full h-full object-contain"
         style={{

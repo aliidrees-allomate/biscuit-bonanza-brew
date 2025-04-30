@@ -1,4 +1,3 @@
-
 import React, { useEffect, useRef } from 'react';
 
 interface FallingItemProps {
@@ -44,13 +43,24 @@ const FallingItem: React.FC<FallingItemProps> = ({
         itemRef.current.style.transform = `translate(${positionRef.current.x}px, ${positionRef.current.y}px)`;
         
         // Check for collision with cup
+        const itemCenter = positionRef.current.x;
+        const itemLeft = positionRef.current.x - size/2;
+        const itemRight = positionRef.current.x + size/2;
         const itemBottom = positionRef.current.y + size;
-        const cupTop = gameHeight - 110; // Approximate cup position from bottom
+        const itemPreviousBottom = itemBottom - speed; // Position before this frame
         
-        // If item is at cup level and within cup bounds
-        if (itemBottom >= cupTop && itemBottom <= cupTop + 30 && 
-            positionRef.current.x > cupPosition - cupWidth/2 && positionRef.current.x < cupPosition + cupWidth/2) {
-          
+        const cupTop = gameHeight - 110; // Approximate cup position from bottom
+        const cupLeft = cupPosition - cupWidth/2;
+        const cupRight = cupPosition + cupWidth/2;
+        
+        // For top collision detection:
+        // 1. Item must have just crossed the cup's top edge in this frame
+        // 2. Item must be within the horizontal bounds of the cup
+        const justCrossedTopEdge = itemPreviousBottom <= cupTop && itemBottom >= cupTop;
+        const isWithinCupWidth = (itemLeft <= cupRight && itemRight >= cupLeft) || 
+                                (itemCenter >= cupLeft && itemCenter <= cupRight);
+        
+        if (justCrossedTopEdge && isWithinCupWidth) {
           if (!caught.current) {
             caught.current = true;
             onCatch(type);
@@ -94,7 +104,7 @@ const FallingItem: React.FC<FallingItemProps> = ({
     >
       {type === 'biscuit' ? (
         <img 
-          src="/lovable-uploads/df61d8ad-4ad1-4860-ab9c-2dfcea460c6e.png" 
+          src="/lovable-uploads/biscuit-vector.png" 
           alt="TAPAL Butter Biscuit"
           className="w-full h-full object-contain"
           style={{
@@ -103,7 +113,7 @@ const FallingItem: React.FC<FallingItemProps> = ({
         />
       ) : (
         <img 
-          src="/lovable-uploads/89319c6f-3312-47f0-8aa4-f553cc33eb92.png" 
+          src="/lovable-uploads/egg-vector.png" 
           alt="Egg"
           className="w-full h-full object-contain"
           style={{
