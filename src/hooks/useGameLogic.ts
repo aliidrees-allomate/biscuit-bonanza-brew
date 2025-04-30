@@ -1,4 +1,3 @@
-
 import { useState, useEffect, useRef } from 'react';
 import { FallingItemType, ScoreAnimationType } from '@/types/game';
 import { useToast } from '@/hooks/use-toast';
@@ -82,9 +81,9 @@ export function useGameLogic(gameSize: { width: number; height: number }) {
       // Hide level up message after 3 seconds
       setTimeout(() => setShowLevelUp(false), 3000);
       
-      // Schedule next level
+      // Continue to the next level (fix: don't end game here)
       levelTimer.current = window.setTimeout(() => {
-        // This will be set in the next iteration of this effect
+        // Schedule the next level increase
       }, levelDuration);
     }, levelDuration);
     
@@ -107,8 +106,8 @@ export function useGameLogic(gameSize: { width: number; height: number }) {
       
       lastSpawnTime.current = now;
       
-      // Increase egg probability based on level
-      const eggProbability = 0.1 + (level * 0.02); // Increases by 2% per level
+      // Increase egg probability based on level - increased from previous value
+      const eggProbability = 0.15 + (level * 0.03); // Increased from 0.1 + (level * 0.02)
       const isEgg = Math.random() < eggProbability; 
       
       const newItem: FallingItemType = {
